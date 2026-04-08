@@ -1,0 +1,45 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: eqt-lab-platform
+  description: EQT Lab Developer Portal — Backstage application and AWS infrastructure
+  tags:
+    - platform
+    - backstage
+spec:
+  owner: guests
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: backstage-app
+  description: Backstage.io developer portal — frontend and backend application
+  annotations:
+    github.com/project-slug: lucasreis-tests/backstage
+  tags:
+    - backstage
+    - nodejs
+    - typescript
+spec:
+  type: service
+  lifecycle: production
+  owner: guests
+  system: eqt-lab-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: backstage-infra
+  description: AWS infrastructure as code — VPC, ECS Fargate, RDS, ALB, WAF, monitoring
+  annotations:
+    github.com/project-slug: lucasreis-tests/terraform
+  tags:
+    - terraform
+    - aws
+    - infrastructure
+spec:
+  type: infrastructure
+  lifecycle: production
+  owner: guests
+  system: eqt-lab-platform

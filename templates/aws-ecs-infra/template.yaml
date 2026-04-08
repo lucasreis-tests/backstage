@@ -1,0 +1,162 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: aws-ecs-infra-template
+  title: AWS ECS Infrastructure (Terraform)
+  description: Production-ready AWS infrastructure with VPC, ECS Fargate, RDS PostgreSQL, ALB, WAF and CloudWatch monitoring — following the reference architecture
+  tags:
+    - terraform
+    - aws
+    - infrastructure
+    - recommended
+spec:
+  owner: user:guest
+  type: infrastructure
+
+  parameters:
+    - title: Service Info
+      description: |
+        ### O que este template gera
+
+        Um **repositório GitHub** com projeto Terraform completo seguindo a arquitetura de referência, pronto para `terraform apply`.
+
+        **Infraestrutura incluída (7 módulos):**
+
+        | Componente | Detalhes |
+        |---|---|
+        | **VPC** | 3 tiers de subnets (public/private/database) em 3 AZs, NAT Gateway, Flow Logs |
+        | **ECR** | Registry privado com scan de vulnerabilidades on push |
+        | **RDS PostgreSQL** | Multi-AZ, encrypted, backups 7 dias, Secrets Manager |
+        | **ECS Fargate** | Auto-scaling 2-6 tasks, circuit breaker com rollback |
+        | **ALB** | Load balancer com access logs em S3 |
+        | **WAF v2** | 5 regras: rate limit, Common Rules, Bad Inputs, SQLi, IP Reputation |
+        | **Monitoring** | 6 alarmes CloudWatch (CPU, memória, 5xx, storage, conexões) → SNS |
+
+        **Segurança por padrão:** containers em subnets privadas, RDS sem acesso público, credenciais no Secrets Manager, WAF com managed rules, VPC Flow Logs.
+
+        **CI/CD incluído:** GitHub Actions com terraform validate, fmt e plan automáticos em PRs.
+      required:
+        - name
+        - description
+        - owner
+      properties:
+        name:
+          title: Service Name
+          type: string
+          description: Unique name used as prefix for all AWS resources (lowercase, hyphens only)
+          pattern: '^[a-z0-9-]+$'
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+        owner:
+          title: Owner
+          type: string
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: [Group, User]
+
+    - title: Infrastructure Config
+      description: |
+        Configure os recursos AWS. Os valores padrão são recomendados para a maioria dos serviços.
+
+        **Referência de sizing:**
+
+        | Perfil | CPU | Memória | RDS | Uso |
+        |---|---|---|---|---|
+        | Small | 256 | 512 | db.t4g.micro | Dev/testes |
+        | Medium | 512 | 1024 | db.t4g.small | Serviços leves |
+        | Large | 1024 | 2048 | db.t4g.medium | Produção padrão |
+        | XLarge | 2048 | 4096 | db.t4g.large | Alta carga |
+      properties:
+        aws_region:
+          title: AWS Region
+          type: string
+          default: us-east-1
+          enum:
+            - us-east-1
+            - us-east-2
+            - us-west-2
+            - sa-east-1
+            - eu-west-1
+        environment:
+          title: Environment
+          type: string
+          default: production
+          enum:
+            - production
+            - staging
+            - development
+        container_port:
+          title: Container Port
+          type: number
+          default: 3000
+        db_instance_class:
+          title: RDS Instance Class
+          type: string
+          default: db.t4g.micro
+          enum:
+            - db.t4g.micro
+            - db.t4g.small
+            - db.t4g.medium
+            - db.t4g.large
+        ecs_cpu:
+          title: ECS CPU (units)
+          type: number
+          default: 512
+          enum:
+            - 256
+            - 512
+            - 1024
+            - 2048
+        ecs_memory:
+          title: ECS Memory (MiB)
+          type: number
+          default: 1024
+          enum:
+            - 512
+            - 1024
+            - 2048
+            - 4096
+
+  steps:
+    - id: fetch-base
+      name: Fetch Base
+      action: fetch:template
+      input:
+        url: ./content
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          aws_region: ${{ parameters.aws_region }}
+          environment: ${{ parameters.environment }}
+          container_port: ${{ parameters.container_port }}
+          db_instance_class: ${{ parameters.db_instance_class }}
+          ecs_cpu: ${{ parameters.ecs_cpu }}
+          ecs_memory: ${{ parameters.ecs_memory }}
+
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        repoUrl: github.com?owner=lucasreis-tests&repo=${{ parameters.name }}-infra
+        description: "Infrastructure as Code — ${{ parameters.description }}"
+        repoVisibility: public
+        defaultBranch: main
+
+    - id: register
+      name: Register in Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in Catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

@@ -1,0 +1,97 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: nestjs-backend-template
+  title: NestJS Backend
+  description: Production-ready NestJS backend with TypeScript, health checks, Swagger, Dockerfile and CI/CD
+  tags:
+    - nestjs
+    - typescript
+    - backend
+    - recommended
+spec:
+  owner: user:guest
+  type: service
+
+  parameters:
+    - title: Service Info
+      description: |
+        ### O que este template gera
+
+        Um **repositório GitHub** com backend NestJS production-ready.
+
+        **Incluído:**
+
+        | Componente | Detalhes |
+        |---|---|
+        | **NestJS 11** | TypeScript, estrutura modular |
+        | **Swagger/OpenAPI** | Documentação automática da API em `/api/docs` |
+        | **Health Check** | Endpoint `/health` via `@nestjs/terminus` |
+        | **CRUD exemplo** | Módulo Items com DTOs e validation pipes |
+        | **Testes** | Jest configurado com testes unitários |
+        | **Dockerfile** | Multi-stage build otimizado |
+        | **CI/CD** | GitHub Actions (test → build → push ECR) |
+        | **Catalog** | `catalog-info.yaml` para registro automático no Backstage |
+      required:
+        - name
+        - description
+        - owner
+      properties:
+        name:
+          title: Service Name
+          type: string
+          description: Unique name (lowercase, hyphens only)
+          pattern: '^[a-z0-9-]+$'
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+        owner:
+          title: Owner
+          type: string
+          description: Owner group or user
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: [Group, User]
+        port:
+          title: Port
+          type: number
+          default: 3000
+          description: HTTP port for the service
+
+  steps:
+    - id: fetch-base
+      name: Fetch Base
+      action: fetch:template
+      input:
+        url: ./content
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          port: ${{ parameters.port }}
+
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        repoUrl: github.com?owner=lucasreis-tests&repo=${{ parameters.name }}
+        description: ${{ parameters.description }}
+        repoVisibility: public
+        defaultBranch: main
+
+    - id: register
+      name: Register in Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in Catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

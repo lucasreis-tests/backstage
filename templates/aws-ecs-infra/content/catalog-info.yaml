@@ -1,0 +1,15 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.name }}-infra
+  description: ${{ values.description }}
+  annotations:
+    github.com/project-slug: lucasreis-tests/${{ values.name }}-infra
+  tags:
+    - terraform
+    - aws
+    - infrastructure
+spec:
+  type: infrastructure
+  lifecycle: production
+  owner: ${{ values.owner }}

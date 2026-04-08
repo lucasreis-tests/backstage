@@ -1,0 +1,47 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: ${{ "${{ values.name }}" }}
+  ECS_CLUSTER: backstage-cluster
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test
+
+  build-and-deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ "${{ secrets.AWS_ROLE_ARN }}" }}
+          aws-region: ${{ "${{ env.AWS_REGION }}" }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr
+
+      - name: Build and push
+        run: |
+          IMAGE=${{ "${{ steps.ecr.outputs.registry }}" }}/${{ "${{ env.ECR_REPOSITORY }}" }}:${{ "${{ github.sha }}" }}
+          docker build -t $IMAGE .
+          docker push $IMAGE
