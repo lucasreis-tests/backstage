@@ -54,6 +54,10 @@ catalog:
       rules:
         - allow: [Template]
     - type: file
+      target: ./templates/argocd-app/template.yaml
+      rules:
+        - allow: [Template]
+    - type: file
       target: ./catalog/eqt-lab-platform.yaml
       rules:
         - allow: [System, Component]

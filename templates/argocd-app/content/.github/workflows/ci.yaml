@@ -1,0 +1,22 @@
+name: Validate Kustomize
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Validate DEV overlay
+        run: kubectl kustomize overlays/dev > /dev/null && echo "✓ DEV overlay valid"
+
+      - name: Validate PROD overlay
+        run: kubectl kustomize overlays/prod > /dev/null && echo "✓ PROD overlay valid"

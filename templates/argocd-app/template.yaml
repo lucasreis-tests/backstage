@@ -1,0 +1,157 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: argocd-kustomize-template
+  title: ArgoCD Application (Kustomize DEV/PROD)
+  description: Application ArgoCD com Kustomize base + overlays DEV e PROD para deploy GitOps no OpenShift/Kubernetes
+  tags:
+    - argocd
+    - gitops
+    - kustomize
+    - kubernetes
+    - recommended
+spec:
+  owner: user:guest
+  type: service
+
+  parameters:
+    - title: Informações da Aplicação
+      description: |
+        ### 🔄 ArgoCD GitOps com Kustomize
+
+        Este template gera um **repositório GitHub** com a estrutura GitOps completa para deploy via ArgoCD.
+
+        **O que é ArgoCD?**
+        ArgoCD é uma ferramenta de Continuous Delivery declarativa para Kubernetes. Ele monitora um repositório Git e sincroniza automaticamente o estado desejado (manifests) com o cluster — se alguém alterar algo manualmente no cluster, o ArgoCD detecta e corrige.
+
+        **O que é Kustomize?**
+        Kustomize permite customizar manifests Kubernetes sem duplicar arquivos. Você define uma **base** comum e cria **overlays** que modificam apenas o que muda entre ambientes (réplicas, recursos, variáveis).
+
+        ---
+
+        **Estrutura gerada:**
+
+        | Diretório | O que contém |
+        |---|---|
+        | `base/` | Manifests comuns — Deployment, Service, ConfigMap, HPA |
+        | `overlays/dev/` | Customizações DEV — 1 réplica, menos recursos, debug habilitado |
+        | `overlays/prod/` | Customizações PROD — 3 réplicas, mais recursos, TLS, PDB |
+        | `argocd/` | 2 Applications ArgoCD — uma para DEV, outra para PROD |
+
+        ---
+
+        **Fluxo GitOps:**
+        1. Dev faz push no repositório
+        2. ArgoCD detecta a mudança
+        3. ArgoCD aplica os manifests no cluster automaticamente
+        4. Se alguém alterar algo direto no cluster, ArgoCD reverte para o estado do Git
+      required:
+        - name
+        - description
+        - owner
+      properties:
+        name:
+          title: Nome da Aplicação
+          type: string
+          description: Nome único (minúsculo, apenas hífens)
+          pattern: '^[a-z0-9-]+$'
+          ui:autofocus: true
+        description:
+          title: Descrição
+          type: string
+        owner:
+          title: Owner
+          type: string
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: [Group, User]
+
+    - title: Configuração dos Ambientes
+      description: |
+        Configure os parâmetros de cada ambiente.
+
+        **Diferenças entre DEV e PROD:**
+
+        | Aspecto | DEV | PROD |
+        |---|---|---|
+        | Réplicas | 1 | 3 |
+        | CPU request/limit | 100m / 500m | 250m / 1000m |
+        | Memória request/limit | 128Mi / 256Mi | 256Mi / 512Mi |
+        | HPA (auto-scaling) | Desabilitado | 2-6 pods (CPU 70%) |
+        | PodDisruptionBudget | Não | Sim (minAvailable: 1) |
+        | Sync Policy | Manual | Auto (self-heal + prune) |
+        | Variáveis | LOG_LEVEL=debug | LOG_LEVEL=info |
+
+        **O que é Sync Policy?**
+        - **Manual**: ArgoCD detecta mudanças mas espera aprovação para aplicar
+        - **Auto + Self-Heal**: ArgoCD aplica automaticamente e corrige desvios no cluster
+      properties:
+        port:
+          title: Porta do Container
+          type: number
+          default: 8080
+        image:
+          title: Imagem Docker
+          type: string
+          default: nginx:latest
+          description: Imagem base para o deploy (pode ser alterada depois no Git)
+        argocd_namespace:
+          title: Namespace do ArgoCD
+          type: string
+          default: openshift-gitops
+          description: Namespace onde o ArgoCD está instalado
+        dev_namespace:
+          title: Namespace DEV
+          type: string
+          default: dev
+        prod_namespace:
+          title: Namespace PROD
+          type: string
+          default: prod
+        argocd_server:
+          title: URL do Cluster (destino)
+          type: string
+          default: https://kubernetes.default.svc
+          description: URL do cluster Kubernetes/OpenShift. Use o default para deploy no mesmo cluster do ArgoCD.
+
+  steps:
+    - id: fetch-base
+      name: Fetch Base
+      action: fetch:template
+      input:
+        url: ./content
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          port: ${{ parameters.port }}
+          image: ${{ parameters.image }}
+          argocd_namespace: ${{ parameters.argocd_namespace }}
+          dev_namespace: ${{ parameters.dev_namespace }}
+          prod_namespace: ${{ parameters.prod_namespace }}
+          argocd_server: ${{ parameters.argocd_server }}
+
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        repoUrl: github.com?owner=lucasreis-tests&repo=${{ parameters.name }}-gitops
+        description: "GitOps — ${{ parameters.description }}"
+        repoVisibility: public
+        defaultBranch: main
+
+    - id: register
+      name: Register in Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in Catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

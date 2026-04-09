@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ${{ values.name }}-prod
+  namespace: ${{ values.argocd_namespace }}
+  labels:
+    app: ${{ values.name }}
+    environment: prod
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/lucasreis-tests/${{ values.name }}-gitops.git
+    targetRevision: main
+    path: overlays/prod
+  destination:
+    server: ${{ values.argocd_server }}
+    namespace: ${{ values.prod_namespace }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

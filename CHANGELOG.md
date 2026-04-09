@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-04-09
+
+### Added
+
+- ArgoCD Application (Kustomize DEV/PROD) scaffolder template
+  - Kustomize base with Deployment, Service, ConfigMap
+  - DEV overlay: 1 replica, lower resources, debug logging, manual sync
+  - PROD overlay: 3 replicas, higher resources, HPA (2-6 pods), PodDisruptionBudget, auto sync with self-heal
+  - 2 ArgoCD Application manifests (dev.yaml, prod.yaml)
+  - GitHub Actions CI with kustomize validation
+  - Detailed descriptions explaining ArgoCD, Kustomize, sync policies and environment differences
+
 ## [1.5.0] - 2026-04-09
 
 ### Added
@@ -136,7 +148,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TLS 1.3 policy ready for HTTPS when certificate is provided
 - All resources tagged with Project, Environment, and ManagedBy
 
-[Unreleased]: https://github.com/your-org/backstage/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/your-org/backstage/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/your-org/backstage/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/your-org/backstage/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/your-org/backstage/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/your-org/backstage/compare/v1.2.0...v1.3.0
