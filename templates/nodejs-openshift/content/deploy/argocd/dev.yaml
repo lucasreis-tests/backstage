@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ${{ values.name }}-dev
+  namespace: ${{ values.argocd_namespace }}
+  labels:
+    app: ${{ values.name }}
+    environment: dev
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/lucasreis-tests/${{ values.name }}.git
+    targetRevision: main
+    path: deploy/overlays/dev
+  destination:
+    server: ${{ values.argocd_server }}
+    namespace: ${{ values.dev_namespace }}
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

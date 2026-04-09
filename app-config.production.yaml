@@ -58,6 +58,10 @@ catalog:
       rules:
         - allow: [Template]
     - type: file
+      target: ./templates/nodejs-openshift/template.yaml
+      rules:
+        - allow: [Template]
+    - type: file
       target: ./catalog/eqt-lab-platform.yaml
       rules:
         - allow: [System, Component]

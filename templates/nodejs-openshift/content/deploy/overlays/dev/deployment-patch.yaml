@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${{ values.name }}
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: ${{ values.name }}
+          image: image-registry.openshift-image-registry.svc:5000/${{ values.dev_namespace }}/${{ values.name }}:latest
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi

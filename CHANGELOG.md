@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-04-09
+
+### Added
+
+- Node.js Backend → OpenShift (ArgoCD GitOps) unified scaffolder template
+  - Single repo with application code + GitOps deploy structure
+  - Express backend with health check, CRUD, tests, Dockerfile
+  - Kustomize base + DEV overlay (1 replica, debug) + PROD overlay (3 replicas, HPA, PDB)
+  - OpenShift Routes with TLS edge termination in both environments
+  - 2 ArgoCD Applications: DEV (manual sync) and PROD (auto sync + self-heal)
+  - Images pulled from OpenShift internal registry per namespace
+  - GitHub Actions CI with tests + kustomize validation
+
 ## [1.6.0] - 2026-04-09
 
 ### Added
@@ -148,7 +161,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TLS 1.3 policy ready for HTTPS when certificate is provided
 - All resources tagged with Project, Environment, and ManagedBy
 
-[Unreleased]: https://github.com/your-org/backstage/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/your-org/backstage/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/your-org/backstage/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/your-org/backstage/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/your-org/backstage/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/your-org/backstage/compare/v1.3.0...v1.4.0
