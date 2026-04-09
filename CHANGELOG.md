@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-04-09
+
+### Added
+
+- OpenShift Application Deploy scaffolder template
+  - Generates Deployment, Service, Route, ConfigMap, BuildConfig (S2I), ImageStream and Tekton Pipeline
+  - Configurable via Backstage UI: namespace, replicas, port, S2I builder image (Node.js/Python/Java/Go), CPU/memory sizing
+  - Detailed descriptions in Portuguese explaining what each component does for users unfamiliar with OpenShift
+  - GitHub Actions CI pipeline with manifest validation
+  - Publishes to GitHub and registers in Backstage catalog with Kubernetes annotations
+- Kubernetes plugin configured for OpenShift cluster connection
+  - Enables viewing pods, deployments, logs and events directly in Backstage catalog pages
+  - Uses service account authentication with OpenShift dashboard integration
+
+## [1.4.0] - 2026-04-09
+
+### Changed
+
+- Redesigned light and dark themes with `#c20fb5` brand identity
+  - Centralized brand color palette with consistent variations (main, light, dark, darker, accent)
+  - Light theme background with subtle rose tint (`#f8f5f9`)
+  - Dark theme with deep purple tones (`#15091a` / `#1e1024`)
+  - Differentiated primary/secondary colors for better visual hierarchy
+  - Varied page theme gradients per section (home, APIs, docs, tools)
+- Added MUI component overrides for polished UI
+  - Rounded buttons (8px) with no uppercase and bold font
+  - Cards with 12px radius, subtle brand-tinted borders and shadows
+  - Chips with softer border radius
+  - Sidebar with brand-colored border accent
+  - Header with brand-tinted box shadow
+- Set Inter as default font family for modern typography
+
 ## [1.3.0] - 2026-04-08
 
 ### Added
@@ -104,7 +136,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TLS 1.3 policy ready for HTTPS when certificate is provided
 - All resources tagged with Project, Environment, and ManagedBy
 
-[Unreleased]: https://github.com/your-org/backstage/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/your-org/backstage/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/your-org/backstage/compare/v1.4.0...v1.5.0
+[1.4.0]: https://github.com/your-org/backstage/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/your-org/backstage/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/your-org/backstage/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/your-org/backstage/compare/v1.1.0...v1.1.1

@@ -1,0 +1,55 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: ${{ values.name }}-pipeline
+  namespace: ${{ values.namespace }}
+  labels:
+    app: ${{ values.name }}
+spec:
+  params:
+    - name: git-url
+      type: string
+      default: https://github.com/lucasreis-tests/${{ values.name }}-openshift.git
+    - name: git-revision
+      type: string
+      default: main
+  workspaces:
+    - name: shared-workspace
+  tasks:
+    - name: fetch-source
+      taskRef:
+        name: git-clone
+        kind: ClusterTask
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+      params:
+        - name: url
+          value: $(params.git-url)
+        - name: revision
+          value: $(params.git-revision)
+
+    - name: build
+      taskRef:
+        name: s2i-${{ values.image_base | replace(":", "-") | replace("_", "-") }}
+        kind: ClusterTask
+      runAfter:
+        - fetch-source
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: IMAGE
+          value: image-registry.openshift-image-registry.svc:5000/${{ values.namespace }}/${{ values.name }}:latest
+
+    - name: deploy
+      taskRef:
+        name: openshift-client
+        kind: ClusterTask
+      runAfter:
+        - build
+      params:
+        - name: SCRIPT
+          value: |
+            oc rollout restart deployment/${{ values.name }} -n ${{ values.namespace }}
+            oc rollout status deployment/${{ values.name }} -n ${{ values.namespace }} --timeout=120s

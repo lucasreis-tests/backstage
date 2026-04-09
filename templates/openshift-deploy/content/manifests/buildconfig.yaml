@@ -1,0 +1,32 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: ${{ values.name }}
+  namespace: ${{ values.namespace }}
+  labels:
+    app: ${{ values.name }}
+spec:
+  source:
+    type: Git
+    git:
+      uri: https://github.com/lucasreis-tests/${{ values.name }}-openshift.git
+      ref: main
+  strategy:
+    type: Source
+    sourceStrategy:
+      from:
+        kind: ImageStreamTag
+        namespace: openshift
+        name: ${{ values.image_base }}
+      env:
+        - name: NPM_MIRROR
+          value: ''
+  output:
+    to:
+      kind: ImageStreamTag
+      name: ${{ values.name }}:latest
+  triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChange: {}
+  runPolicy: Serial

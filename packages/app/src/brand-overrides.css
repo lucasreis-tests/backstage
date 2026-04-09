@@ -1,0 +1,24 @@
+:root,
+[data-theme-mode='light'] {
+  --bui-bg-solid: #c20fb5;
+  --bui-bg-solid-hover: #8a0b80;
+  --bui-bg-solid-pressed: #5e0757;
+  --bui-bg-solid-disabled: #8a0b80;
+  --bui-ring: #c20fb5;
+  --bui-border-info: #d94fd0;
+  --bui-fg-info: #c20fb5;
+  --bui-fg-info-on-bg: #8a0b80;
+  --bui-bg-info: #f8e8f7;
+}
+
+[data-theme-mode='dark'] {
+  --bui-bg-solid: #d94fd0;
+  --bui-bg-solid-hover: #c20fb5;
+  --bui-bg-solid-pressed: #c20fb5;
+  --bui-bg-solid-disabled: #5e0757;
+  --bui-ring: #c20fb5;
+  --bui-border-info: #d94fd0;
+  --bui-fg-info: #e680df;
+  --bui-fg-info-on-bg: #e680df;
+  --bui-bg-info: #2d1235;
+}

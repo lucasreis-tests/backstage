@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${{ values.name }}
+  namespace: ${{ values.namespace }}
+  labels:
+    app: ${{ values.name }}
+    app.kubernetes.io/name: ${{ values.name }}
+    app.kubernetes.io/managed-by: backstage
+spec:
+  replicas: ${{ values.replicas }}
+  selector:
+    matchLabels:
+      app: ${{ values.name }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: ${{ values.name }}
+        app.kubernetes.io/name: ${{ values.name }}
+    spec:
+      containers:
+        - name: ${{ values.name }}
+          image: ${{ values.name }}:latest
+          ports:
+            - containerPort: ${{ values.port }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: ${{ values.name }}-config
+          resources:
+            requests:
+              cpu: ${{ values.cpu_request }}
+              memory: ${{ values.memory_request }}
+            limits:
+              cpu: ${{ values.cpu_limit }}
+              memory: ${{ values.memory_limit }}
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: ${{ values.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: ${{ values.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      terminationGracePeriodSeconds: 30

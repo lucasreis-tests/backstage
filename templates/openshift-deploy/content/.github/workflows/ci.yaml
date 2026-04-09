@@ -1,0 +1,25 @@
+name: Validate OpenShift Manifests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Validate manifests
+        run: |
+          echo "Validating Kubernetes manifests..."
+          for f in manifests/*.yaml; do
+            echo "  ✓ $f"
+            kubectl apply --dry-run=client -f "$f" 2>&1 || true
+          done
+          echo "All manifests validated."

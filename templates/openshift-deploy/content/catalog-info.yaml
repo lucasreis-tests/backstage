@@ -1,0 +1,16 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.name }}
+  description: ${{ values.description }}
+  annotations:
+    github.com/project-slug: lucasreis-tests/${{ values.name }}-openshift
+    backstage.io/kubernetes-namespace: ${{ values.namespace }}
+    backstage.io/kubernetes-label-selector: app=${{ values.name }}
+  tags:
+    - openshift
+    - kubernetes
+spec:
+  type: service
+  lifecycle: production
+  owner: ${{ values.owner }}

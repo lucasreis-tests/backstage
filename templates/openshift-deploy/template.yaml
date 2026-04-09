@@ -1,0 +1,208 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: openshift-deploy-template
+  title: OpenShift Application Deploy
+  description: Deploy de aplicação no Red Hat OpenShift com manifests Kubernetes, Route, BuildConfig S2I e pipeline Tekton
+  tags:
+    - openshift
+    - kubernetes
+    - deploy
+    - recommended
+spec:
+  owner: user:guest
+  type: service
+
+  parameters:
+    - title: Informações da Aplicação
+      description: |
+        ### 🚀 Deploy no Red Hat OpenShift
+
+        Este template gera um **repositório GitHub** com tudo necessário para fazer deploy de uma aplicação no OpenShift.
+
+        **O que é o OpenShift?**
+        O Red Hat OpenShift é uma plataforma Kubernetes enterprise que adiciona ferramentas de developer experience, segurança e operações sobre o Kubernetes padrão.
+
+        ---
+
+        **O que este template gera:**
+
+        | Componente | O que faz |
+        |---|---|
+        | **Deployment** | Define como sua aplicação roda — réplicas, CPU, memória, health checks |
+        | **Service** | Expõe sua aplicação internamente no cluster para outros serviços |
+        | **Route** | Cria uma URL pública para acessar sua aplicação (equivalente ao Ingress, mas nativo do OpenShift) |
+        | **ConfigMap** | Armazena configurações da aplicação (variáveis de ambiente não-sensíveis) |
+        | **BuildConfig + ImageStream** | Build S2I (Source-to-Image) — o OpenShift compila seu código direto do Git, sem precisar de Dockerfile |
+        | **Pipeline Tekton** | CI/CD nativo do OpenShift — build, test e deploy automáticos a cada push |
+        | **GitHub Actions** | Validação dos manifests YAML com `kubectl` em cada PR |
+        | **Catalog** | Registro automático no Backstage com link para o cluster OpenShift |
+
+        ---
+
+        **Pré-requisitos:**
+        - Acesso a um cluster OpenShift (4.x)
+        - `oc` CLI configurado ou service account com permissões no namespace
+      required:
+        - name
+        - description
+        - owner
+      properties:
+        name:
+          title: Nome da Aplicação
+          type: string
+          description: Nome único da aplicação (minúsculo, apenas hífens)
+          pattern: '^[a-z0-9-]+$'
+          ui:autofocus: true
+        description:
+          title: Descrição
+          type: string
+        owner:
+          title: Owner
+          type: string
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: [Group, User]
+
+    - title: Configuração do Deploy
+      description: |
+        Configure como sua aplicação será deployada no OpenShift.
+
+        **Referência de sizing:**
+
+        | Perfil | CPU Request | CPU Limit | Memória Request | Memória Limit | Uso recomendado |
+        |---|---|---|---|---|---|
+        | Micro | 50m | 200m | 64Mi | 256Mi | Jobs, scripts, ferramentas internas |
+        | Small | 100m | 500m | 128Mi | 512Mi | APIs leves, microsserviços simples |
+        | Medium | 250m | 1000m | 256Mi | 1Gi | Produção padrão |
+        | Large | 500m | 2000m | 512Mi | 2Gi | Aplicações com alta carga |
+
+        **O que é S2I (Source-to-Image)?**
+        É uma feature exclusiva do OpenShift que compila seu código-fonte diretamente em uma imagem container, sem precisar escrever um Dockerfile. Basta apontar o repositório Git e escolher a imagem base (Node.js, Python, Java, etc).
+      properties:
+        namespace:
+          title: Namespace (Project)
+          type: string
+          default: default
+          description: Namespace/Project do OpenShift onde a aplicação será deployada
+        replicas:
+          title: Réplicas
+          type: number
+          default: 2
+          enum:
+            - 1
+            - 2
+            - 3
+            - 5
+          description: Número de pods rodando simultaneamente (2+ para alta disponibilidade)
+        port:
+          title: Porta do Container
+          type: number
+          default: 8080
+          description: Porta HTTP que sua aplicação escuta
+        image_base:
+          title: Imagem Base (S2I Builder)
+          type: string
+          default: nodejs:22-ubi9
+          enum:
+            - nodejs:22-ubi9
+            - nodejs:20-ubi9
+            - python:3.12-ubi9
+            - python:3.11-ubi9
+            - java:21-ubi9
+            - java:17-ubi9
+            - go:1.22-ubi9
+          enumNames:
+            - Node.js 22 (UBI 9)
+            - Node.js 20 (UBI 9)
+            - Python 3.12 (UBI 9)
+            - Python 3.11 (UBI 9)
+            - Java 21 (UBI 9)
+            - Java 17 (UBI 9)
+            - Go 1.22 (UBI 9)
+          description: Imagem base para o build S2I — o OpenShift usa essa imagem para compilar seu código
+        cpu_request:
+          title: CPU Request
+          type: string
+          default: 100m
+          enum:
+            - 50m
+            - 100m
+            - 250m
+            - 500m
+        cpu_limit:
+          title: CPU Limit
+          type: string
+          default: 500m
+          enum:
+            - 200m
+            - 500m
+            - 1000m
+            - 2000m
+        memory_request:
+          title: Memory Request
+          type: string
+          default: 128Mi
+          enum:
+            - 64Mi
+            - 128Mi
+            - 256Mi
+            - 512Mi
+        memory_limit:
+          title: Memory Limit
+          type: string
+          default: 512Mi
+          enum:
+            - 256Mi
+            - 512Mi
+            - 1Gi
+            - 2Gi
+        git_repo_url:
+          title: URL do Repositório Git (para S2I Build)
+          type: string
+          default: ''
+          description: URL do repositório com o código-fonte. Se vazio, será preenchido após a criação do repo.
+
+  steps:
+    - id: fetch-base
+      name: Fetch Base
+      action: fetch:template
+      input:
+        url: ./content
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          namespace: ${{ parameters.namespace }}
+          replicas: ${{ parameters.replicas }}
+          port: ${{ parameters.port }}
+          image_base: ${{ parameters.image_base }}
+          cpu_request: ${{ parameters.cpu_request }}
+          cpu_limit: ${{ parameters.cpu_limit }}
+          memory_request: ${{ parameters.memory_request }}
+          memory_limit: ${{ parameters.memory_limit }}
+
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        repoUrl: github.com?owner=lucasreis-tests&repo=${{ parameters.name }}-openshift
+        description: "OpenShift Deploy — ${{ parameters.description }}"
+        repoVisibility: public
+        defaultBranch: main
+
+    - id: register
+      name: Register in Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in Catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}
