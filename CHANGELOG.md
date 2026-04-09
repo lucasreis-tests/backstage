@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-04-09
+
+### Added
+
+- OpenShift Pipeline Setup (Tekton) scaffolder template
+  - Replaces manual shell script for project setup
+  - User inputs: environment (dev/hml/prod), artifact name, Git token, repository, cluster
+  - Generates: setup.sh script, Git auth secret, registry-editor RoleBinding, app secrets
+  - PROD: PipelineRun manifest for manual execution with pre-filled IMAGE/GIT_REPO/BRANCH
+  - DEV/HML: EventListener + TriggerBinding + TriggerTemplate + Route for webhook-triggered builds
+  - README with environment-specific instructions (webhook config for dev/hml, console link for prod)
+
 ## [1.7.0] - 2026-04-09
 
 ### Added
@@ -161,7 +173,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TLS 1.3 policy ready for HTTPS when certificate is provided
 - All resources tagged with Project, Environment, and ManagedBy
 
-[Unreleased]: https://github.com/your-org/backstage/compare/v1.7.0...HEAD
+[Unreleased]: https://github.com/your-org/backstage/compare/v1.8.0...HEAD
+[1.8.0]: https://github.com/your-org/backstage/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/your-org/backstage/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/your-org/backstage/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/your-org/backstage/compare/v1.4.0...v1.5.0

@@ -1,0 +1,26 @@
+{% if values.ambiente == "prod" %}
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: ${{ values.artefato_name }}-build-run
+  namespace: ${{ values.projeto }}
+spec:
+  pipelineRef:
+    name: buildah
+  params:
+    - name: IMAGE
+      value: image-registry.openshift-image-registry.svc:5000/${{ values.projeto }}/app
+    - name: GIT_REPO
+      value: https://${{ values.repositorio }}/${{ values.artefato_name }}.git
+    - name: GIT_REVISION
+      value: main
+  workspaces:
+    - name: shared-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 500Mi
+{% endif %}

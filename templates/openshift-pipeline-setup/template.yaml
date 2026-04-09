@@ -1,0 +1,142 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: openshift-pipeline-setup-template
+  title: OpenShift Pipeline Setup (Tekton)
+  description: Configura projeto OpenShift com pipeline Tekton, secrets Git, permissões e webhook — substitui o script shell de setup
+  tags:
+    - openshift
+    - tekton
+    - pipeline
+    - recommended
+spec:
+  owner: user:guest
+  type: service
+
+  parameters:
+    - title: Configuração do Projeto
+      description: |
+        ### ⚙️ Setup de Pipeline no OpenShift
+
+        Este template substitui o script shell de configuração de projetos. Em vez de rodar comandos `oc` manualmente, você preenche os campos abaixo e recebe um repositório com todos os manifests prontos para aplicar.
+
+        **O que o script original fazia:**
+        1. Criava permissões (registry-editor para pipeline)
+        2. Criava secret Git com token para o Tekton acessar o repositório
+        3. Anotava a secret com o repositório
+        4. Fazia link da secret com a service account `pipeline`
+        5. Criava secrets de ambiente (dev/hml/prod)
+        6. Mostrava instruções de webhook ou pipeline manual
+
+        **O que este template gera:**
+
+        | Arquivo | O que faz |
+        |---|---|
+        | `setup.sh` | Script automatizado com todos os comandos `oc` pré-preenchidos |
+        | `manifests/git-auth-secret.yaml` | Secret de autenticação Git para o Tekton |
+        | `manifests/role-binding.yaml` | Permissão registry-editor para pipeline |
+        | `manifests/pipeline-run.yaml` | PipelineRun pronto para executar (PROD) |
+        | `manifests/trigger.yaml` | EventListener + TriggerTemplate para webhook (DEV/HML) |
+        | `README.md` | Instruções passo a passo com os links do seu cluster |
+
+        ---
+
+        **⚠️ Pré-requisito:** Você precisa estar logado no cluster OpenShift (`oc login`) antes de executar o `setup.sh`.
+      required:
+        - ambiente
+        - artefato_name
+        - git_token
+        - repositorio
+        - cluster
+      properties:
+        ambiente:
+          title: Ambiente
+          type: string
+          enum:
+            - dev
+            - hml
+            - prod
+          enumNames:
+            - DEV (Desenvolvimento)
+            - HML (Homologação)
+            - PROD (Produção)
+          description: Ambiente onde o artefato será deployado
+        artefato_name:
+          title: Nome do Artefato
+          type: string
+          description: "Nome do microsserviço (ex: ms-tickets, ms-com-meteorologia)"
+          pattern: '^[a-z0-9-]+$'
+          ui:autofocus: true
+        git_token:
+          title: Token Git
+          type: string
+          ui:widget: password
+          description: Token de acesso ao repositório Git (será usado na secret do Tekton)
+        repositorio:
+          title: Repositório Git (sem https://)
+          type: string
+          description: "Caminho do repositório sem protocolo (ex: gitlab.com/org/ms-tickets)"
+        cluster:
+          title: Cluster OpenShift
+          type: string
+          description: "Domínio do cluster (ex: ocp.empresa.com.br)"
+
+    - title: Configuração de Secrets do Ambiente
+      description: |
+        ### 🔐 Secrets do Ambiente
+
+        O script original perguntava se você queria criar secrets de ambiente. Aqui você pode informar as variáveis que serão injetadas na aplicação.
+
+        **Exemplos de variáveis comuns:**
+        - `DATABASE_URL` — conexão com banco de dados
+        - `API_KEY` — chave de API externa
+        - `REDIS_URL` — conexão com cache
+
+        Deixe em branco se não precisar de secrets agora (pode adicionar depois).
+      properties:
+        secret_vars:
+          title: Variáveis de Secret (uma por linha, formato CHAVE=valor)
+          type: string
+          ui:widget: textarea
+          ui:options:
+            rows: 5
+          description: "Exemplo:\nDATABASE_URL=postgresql://user:pass@host:5432/db\nAPI_KEY=minha-chave"
+
+  steps:
+    - id: fetch-base
+      name: Gerar manifests e scripts
+      action: fetch:template
+      input:
+        url: ./content
+        values:
+          ambiente: ${{ parameters.ambiente }}
+          artefato_name: ${{ parameters.artefato_name }}
+          git_token: ${{ parameters.git_token }}
+          repositorio: ${{ parameters.repositorio }}
+          cluster: ${{ parameters.cluster }}
+          projeto: "${{ parameters.ambiente }}-${{ parameters.artefato_name }}"
+          secret_vars: ${{ parameters.secret_vars }}
+
+    - id: publish
+      name: Publicar no GitHub
+      action: publish:github
+      input:
+        repoUrl: github.com?owner=lucasreis-tests&repo=${{ parameters.ambiente }}-${{ parameters.artefato_name }}-setup
+        description: "OpenShift Pipeline Setup — ${{ parameters.ambiente }}-${{ parameters.artefato_name }}"
+        repoVisibility: public
+        defaultBranch: main
+
+    - id: register
+      name: Registrar no Catálogo
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+
+  output:
+    links:
+      - title: Repositório
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Abrir no Catálogo
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

@@ -1,0 +1,17 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.projeto }}
+  description: "OpenShift Pipeline Setup — ${{ values.artefato_name }} (${{ values.ambiente }})"
+  annotations:
+    github.com/project-slug: lucasreis-tests/${{ values.projeto }}-setup
+    backstage.io/kubernetes-namespace: ${{ values.projeto }}
+    backstage.io/kubernetes-label-selector: app=${{ values.artefato_name }}
+  tags:
+    - openshift
+    - tekton
+    - ${{ values.ambiente }}
+spec:
+  type: service
+  lifecycle: production
+  owner: ${{ values.owner }}

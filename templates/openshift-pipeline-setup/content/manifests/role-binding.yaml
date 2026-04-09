@@ -1,0 +1,12 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pipeline-registry-editor
+subjects:
+  - kind: ServiceAccount
+    name: pipeline
+    namespace: ${{ values.projeto }}
+roleRef:
+  kind: ClusterRole
+  name: registry-editor
+  apiGroup: rbac.authorization.k8s.io

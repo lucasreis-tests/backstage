@@ -1,0 +1,74 @@
+{% if values.ambiente != "prod" %}
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: el-${{ values.projeto }}
+  namespace: ${{ values.projeto }}
+spec:
+  serviceAccountName: pipeline
+  triggers:
+    - name: git-push-trigger
+      bindings:
+        - ref: git-push-binding
+      template:
+        ref: ${{ values.artefato_name }}-trigger-template
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: git-push-binding
+  namespace: ${{ values.projeto }}
+spec:
+  params:
+    - name: git-revision
+      value: $(body.ref)
+    - name: git-repo-url
+      value: $(body.repository.clone_url)
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: ${{ values.artefato_name }}-trigger-template
+  namespace: ${{ values.projeto }}
+spec:
+  params:
+    - name: git-revision
+    - name: git-repo-url
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: ${{ values.artefato_name }}-build-
+      spec:
+        pipelineRef:
+          name: buildah
+        params:
+          - name: IMAGE
+            value: image-registry.openshift-image-registry.svc:5000/${{ values.projeto }}/app
+          - name: GIT_REPO
+            value: $(tt.params.git-repo-url)
+          - name: GIT_REVISION
+            value: $(tt.params.git-revision)
+        workspaces:
+          - name: shared-workspace
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 500Mi
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: el-${{ values.projeto }}
+  namespace: ${{ values.projeto }}
+spec:
+  to:
+    kind: Service
+    name: el-el-${{ values.projeto }}
+  port:
+    targetPort: http-listener
+{% endif %}
